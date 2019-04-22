@@ -12,7 +12,7 @@
       </el-col>
       <el-col :span="12">
         <el-button
-          v-if="loginAuth.auths.authsList.add || loginAuth.name == 'root'"
+          v-if="loginAuth.auths.authsList.add || loginAuth.name == authNoDeleteName"
           style="float:right"
           type="primary"
           @click="addAuth"
@@ -46,12 +46,12 @@
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button
-            v-if="loginAuth.auths.authsList.edit || loginAuth.name == 'root'"
+            v-if="loginAuth.auths.authsList.edit || loginAuth.name == authNoDeleteName"
             size="mini"
             @click="handleEdit( scope.row )"
           >编辑</el-button>
           <el-button
-            v-if="scope.row.name != 'root' && (loginAuth.auths.authsList.delete  || loginAuth.name == 'root')"
+            v-if="scope.row.name != authNoDeleteName && (loginAuth.auths.authsList.delete  || loginAuth.name == authNoDeleteName)"
             size="mini"
             type="danger"
             @click="handleDelete(scope.row._id)"
@@ -59,6 +59,8 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <el-pagination class="pagination" background @current-change="handleCurrentChange" :page-size="filter.size" layout="prev, pager, next" :total="filter.conut"></el-pagination>
 
     <el-dialog :title="dialogTitleName" :visible.sync="dialogEditVisible" max-height="200">
       <el-form
@@ -71,7 +73,7 @@
       >
         <el-form-item label="权限名称" prop="name">
           <el-input
-            :disabled="auth.name == 'root'?true:false"
+            :disabled="auth.name == authNoDeleteName?true:false"
             type="text"
             v-model="auth.name"
             placeholder="请输入权限名称"
@@ -79,7 +81,7 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-switch
-            :disabled="auth.name == 'root'?true:false"
+            :disabled="auth.name == authNoDeleteName?true:false"
             v-model="auth.status"
             active-color="#13ce66"
             inactive-color="#ff4949"
@@ -87,47 +89,31 @@
         </el-form-item>
         <el-form-item label="权限范围">
           <el-checkbox
-            v-if="auth.name != 'root'"
+            v-if="auth.name != authNoDeleteName"
             v-model="treeData.authsList.show"
             @change="changeAuths"
           >权限管理</el-checkbox>
           <div class="checkTable">
             <el-checkbox
-              v-if="treeData.authsList.show && auth.name != 'root'"
+              v-if="treeData.authsList.show && auth.name != authNoDeleteName"
               v-model="treeData.authsList.add"
             >添加</el-checkbox>
             <el-checkbox
-              v-if="treeData.authsList.show && auth.name != 'root'"
+              v-if="treeData.authsList.show && auth.name != authNoDeleteName"
               v-model="treeData.authsList.edit"
             >编辑</el-checkbox>
             <el-checkbox
-              v-if="treeData.authsList.show && auth.name != 'root'"
+              v-if="treeData.authsList.show && auth.name != authNoDeleteName"
               v-model="treeData.authsList.delete"
             >删除</el-checkbox>
           </div>
-          
 
-          <el-checkbox
-            v-model="treeData.usersList.show"
-            @change="changeUsers"
-          >人员管理</el-checkbox>
+          <el-checkbox v-model="treeData.usersList.show" @change="changeUsers">人员管理</el-checkbox>
           <div class="checkTable">
-            <el-checkbox
-              v-if="treeData.usersList.show"
-              v-model="treeData.usersList.add"
-            >添加</el-checkbox>
-            <el-checkbox
-              v-if="treeData.usersList.show"
-              v-model="treeData.usersList.edit"
-            >编辑</el-checkbox>
-            <el-checkbox
-              v-if="treeData.usersList.show"
-              v-model="treeData.usersList.delete"
-            >删除</el-checkbox>
+            <el-checkbox v-if="treeData.usersList.show" v-model="treeData.usersList.add">添加</el-checkbox>
+            <el-checkbox v-if="treeData.usersList.show" v-model="treeData.usersList.edit">编辑</el-checkbox>
+            <el-checkbox v-if="treeData.usersList.show" v-model="treeData.usersList.delete">删除</el-checkbox>
           </div>
-
-
-
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -143,7 +129,6 @@
         <el-button type="primary" @click="enterDelete()">确 定</el-button>
       </span>
     </el-dialog>
-
   </div>
 </template>
 
@@ -161,7 +146,8 @@ export default {
       }
     };
     return {
-      deleteId: '',
+      authNoDeleteName : '',
+      deleteId: "",
       loginAuth: {
         name: "",
         authsList: {}
@@ -169,7 +155,8 @@ export default {
       filter: {
         status: true,
         page: 1,
-        size: 10
+        size: 10,
+        conut: 0
       },
       userId: "",
       authId: "",
@@ -210,6 +197,7 @@ export default {
     this.userId = decode.id;
     this.loginAuth.name = this.$store.state.auth.name;
     this.loginAuth.auths = this.$store.state.auth.auths;
+    this.authNoDeleteName = this.$store.state.authNoDeleteName
   },
   methods: {
     selectPageData() {
@@ -224,7 +212,12 @@ export default {
         )
         .then(res => {
           this.authsList = res.data.auths;
+          this.filter.conut = res.data.conut
         });
+    },
+    handleCurrentChange(val){
+      this.filter.page = val
+      this.selectPageData()
     },
     handleEdit(auth) {
       this.authId = auth._id;
@@ -238,14 +231,14 @@ export default {
       this.dialogEditVisible = true;
     },
     handleDelete(id) {
-      this.deleteId = id
-      this.centerDialogVisible = true
+      this.deleteId = id;
+      this.centerDialogVisible = true;
     },
-    enterDelete(){
+    enterDelete() {
       this.$axios.delete("/api/auths/deleteById/" + this.deleteId).then(res => {
         this.$message.success(res.data.msg);
         this.selectPageData();
-        this.centerDialogVisible = false
+        this.centerDialogVisible = false;
       });
     },
     addAuth() {
@@ -335,8 +328,8 @@ export default {
       });
     },
     changeStatus() {
-      this.filter.page = 1
-      this.selectPageData()
+      this.filter.page = 1;
+      this.selectPageData();
     },
     changeAuths() {
       if (!this.treeData.authsList.show) {
@@ -345,7 +338,7 @@ export default {
         this.treeData.authsList.delete = false;
       }
     },
-    changeUsers(){
+    changeUsers() {
       if (!this.treeData.usersList.show) {
         this.treeData.usersList.add = false;
         this.treeData.usersList.edit = false;
@@ -358,35 +351,32 @@ export default {
     getTreeData(auth) {
       if (auth.auths) {
         // 这里每增加一个权限组就必须判断一次
-        if(auth.auths.authsList){
-          this.treeData.authsList = auth.auths.authsList
-        }else{
-          this.initTreedataAuths()
+        if (auth.auths.authsList) {
+          this.treeData.authsList = auth.auths.authsList;
+        } else {
+          this.initTreedataAuths();
         }
 
-        if(auth.auths.usersList){
-          this.treeData.usersList = auth.auths.usersList
-        }else{
-          this.initTreedataUsers()
+        if (auth.auths.usersList) {
+          this.treeData.usersList = auth.auths.usersList;
+        } else {
+          this.initTreedataUsers();
         }
-
       } else {
         this.initTreedata();
       }
     },
-    initTreedata(){
-      this.initTreedataAuths()
-      this.initTreedataUsers()
+    initTreedata() {
+      this.initTreedataAuths();
+      this.initTreedataUsers();
     },
     initTreedataAuths() {
       this.treeData.authsList.show = false;
       this.treeData.authsList.add = false;
       this.treeData.authsList.edit = false;
       this.treeData.authsList.delete = false;
-
-      
     },
-    initTreedataUsers(){
+    initTreedataUsers() {
       this.treeData.usersList.show = false;
       this.treeData.usersList.add = false;
       this.treeData.usersList.edit = false;
@@ -414,6 +404,10 @@ export default {
 .spanTi {
   display: inline-block;
   width: 100%;
+  text-align: center;
+}
+.pagination{
+  margin-top: 40px;
   text-align: center;
 }
 </style>

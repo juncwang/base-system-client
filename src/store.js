@@ -6,6 +6,10 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     systemName: 'hello world',
+    // 系统初始化的最高权限
+    authNoDeleteName: 'root',
+    // 第一个用户
+    userNoDeleteName: 'juncwang@live.com',
     auth: {}
   },
   mutations: {
