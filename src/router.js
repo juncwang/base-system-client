@@ -1,25 +1,47 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Home from './views/Home.vue'
+import Index from './views/Index'
 
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   mode: 'history',
   base: process.env.BASE_URL,
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: Home
+      redirect: '/index'
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import(/* webpackChunkName: "about" */ './views/About.vue')
+      path: '/index',
+      name: 'index',
+      component: Index,
+      redirect: '/home',
+      children: [
+        { path: '/home', name: 'home', component: () => import('./views/Home')},
+        { path: '/auths', name: 'auths', component: () => import('./views/AuthList')},
+        { path: '/users', name: 'users', component: () => import('./views/UserList')}
+      ]
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('./views/Login')
     }
   ]
 })
+
+router.beforeEach((to, from, next) => {
+  if(to.path == '/login'){
+    next()
+  }else{
+    let token = localStorage.getItem('baseSystem-Token')
+    if(token){
+      next()
+    }else{
+      next('/login')
+    }
+  }
+})
+
+export default router
