@@ -10,7 +10,8 @@ export default new Vuex.Store({
     authNoDeleteName: 'root',
     // 第一个用户
     userNoDeleteName: 'juncwang@live.com',
-    auth: {}
+    auth: {
+    }
   },
   mutations: {
     setAuths: (state, payload) => {

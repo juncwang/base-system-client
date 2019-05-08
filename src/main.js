@@ -6,6 +6,9 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import axios from './http'
 
+axios.defaults.baseURL = "/apis"
+axios.defaults.timeout = 5000
+
 Vue.config.productionTip = false
 Vue.prototype.$axios = axios
 
